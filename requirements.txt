@@ -1,0 +1,4 @@
+tinydb
+pycountry
+python-telegram-bot
+beautifulsoup4

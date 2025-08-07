@@ -1,34 +1,28 @@
 from telegram import Update
 from telegram.ext import ContextTypes, CallbackQueryHandler
+from ..utils.validation import validate
+from ..utils.misc import get_country_list,get_country_name
+from ..models.user import UserDB
 
 async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Parses the CallbackQuery and updates the message text."""
     query = update.callback_query
 
-    # Check if the query is None
-    if query is None:
-        # Optionally log the issue or notify the user
-        if update.effective_chat:
-            await context.bot.send_message(
-                chat_id=update.effective_chat.id,
-                text="Something went wrong. No callback query found."
-            )
-        return
-
-    try:
-        # You must answer the callback query
-        await query.answer()
-    except Exception as e:
-        # Catch and optionally log the error
-        print(f"Error answering callback query: {e}")
-        return
+    # Validates if its a valid update
+    await validate(update,context,query)
+    user_id = update.effective_user.id
 
     # Handle different callback data
     if query.data == "button_clicked":
         await query.edit_message_text(text="You clicked the button! 🎉")
     elif query.data == "help_clicked":
-        await query.edit_message_text(text="This is the help text. You can add more info here.")
+        await query.edit_message_text(text="Accept our lord and saviour, only They can help you but if you want to track your games just drop the link 😉")
+    elif query.data in get_country_list():
+        user_db = UserDB()
+        user_db.set_region(str(user_id), query.data)
+        await query.edit_message_text(text=f"Region Set to {get_country_name(query.data)}")
+        user_db.close()
     else:
-        await query.edit_message_text(text="Unknown action.")
+        await query.edit_message_text(text="Unknow button Click")
 
 button_handler = CallbackQueryHandler(button_callback)
