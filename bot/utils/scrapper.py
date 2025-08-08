@@ -106,8 +106,8 @@ def get_gog_game_price(url):
     soup = BeautifulSoup(response.text, 'html.parser')
     # Find the span by id
     try:
-        price = soup.find('span', attrs={"selenium-id": "ProductFinalPrice"}).text
-        name = soup.find('span', attrs={"selenium-id": "ProductTitle"}).text
+        price = soup.find('span', attrs={"selenium-id": "ProductFinalPrice"}).text.strip('\n')
+        name = soup.find('h1', attrs={"selenium-id": "ProductTitle"}).text.strip('\n')
         return name, float(price)
     except Exception as e:
          raise ValueError("Unable to find game name or price")

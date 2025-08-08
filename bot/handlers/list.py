@@ -2,7 +2,7 @@ from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler
 from bot.models.game import GameDB
 from bot.models.user import UserDB
-from bot.utils.constants import CURRENCY, ID, PRICE, REGION, URL
+from bot.utils.constants import CURRENCY, ID, PRICE, REGION, TARGET_PRICE, URL
 from bot.utils.logger import get_logger
 from bot.utils.misc import get_region_from_id
 from bot.keyboards.inline import get_tacked_item_keyboard
@@ -33,18 +33,24 @@ async def list(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
                         URL: game_url,
                         PRICE: latest_price,
                         REGION: get_region_from_id(game_id),
-                        ID: game_id
+                        ID: game_id,
+                        TARGET_PRICE: game[TARGET_PRICE]
                     })
     
-    await update.message.reply_html(
-        f"Hi {user.mention_html()}! Here is your list of Games:",
-    )
-    for game in fetched_games:
-        logger.info(f'Showing tracking details for the game {game[ID]}')
+    if len(fetched_games) == 0:
         await update.message.reply_html(
-            f"{game[URL]} \n\nLatest Price: {CURRENCY[game[REGION]]}{game[PRICE]}",
-            reply_markup=get_tacked_item_keyboard(game[ID])
-            )
-           
+            f"{user.mention_html()}! your list looks empty 😢🪹",
+        )
+    else:
+        await update.message.reply_html(
+            f"Hi {user.mention_html()}! Here is your list of Games:",
+        )
+        for game in fetched_games:
+            logger.info(f'Showing tracking details for the game {game[ID]}')
+            await update.message.reply_html(
+                f"{game[URL]} \n\nLatest Price: {CURRENCY[game[REGION]]}{game[PRICE]}\n"
+                f"Target Price: {CURRENCY[game[REGION]]}{round(game[TARGET_PRICE],2)}",
+                reply_markup=get_tacked_item_keyboard(game[ID])
+                )
 
 list_handler = CommandHandler(("list"), list)

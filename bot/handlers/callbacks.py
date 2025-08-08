@@ -23,8 +23,8 @@ async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
         with UserDB() as user_db:
             user_db.set_region(str(user_id), query.data)
             await query.edit_message_text(text=f"Region Set to {get_country_name(query.data)}")
-    elif query.data.startswith("untrack_"):
-        game_id = query.data.split("_")[1]
+    elif query.data.startswith("untrack="):
+        game_id = query.data.split("=")[1]
         with UserDB() as user_db:
             user_db.remove_game_from_user(user_id, game_id)
         with GameDB() as game_db:

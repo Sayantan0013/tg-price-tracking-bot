@@ -24,8 +24,8 @@ def get_tacked_item_keyboard(game_id: list) -> InlineKeyboardMarkup:
     """Returns the inline keyboard for the tracked game."""
     keyboard = [
         [
-            InlineKeyboardButton("🛑 Stop Tracking", callback_data=f"untrack_{game_id}"),
-            InlineKeyboardButton("📉 History", callback_data=f"history_{game_id}")
+            InlineKeyboardButton("🛑 Stop Tracking", callback_data=f"untrack={game_id}"),
+            InlineKeyboardButton("📉 History", callback_data=f"history={game_id}")
         ]
     ]
     return InlineKeyboardMarkup(keyboard)

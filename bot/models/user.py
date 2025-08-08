@@ -57,7 +57,7 @@ class UserDB:
         if user_id in self.db:
             del self.db[user_id]
 
-    def add_game_to_user(self, user_id: int, game_id: str, target_price: float = 1e9):
+    def add_game_to_user(self, user_id: int, game_id: str, target_price: float):
         """Add a game to a user's game tracker list."""
         user_data = self._get_user_data(user_id)
 
@@ -71,7 +71,7 @@ class UserDB:
 
         user_data[TRACKERS].append({
             ID: game_id,
-            TARGET_PRICE: target_price
+            TARGET_PRICE: target_price - 1e-4 # small trick to reduce redundant notification
         })
 
         self.db[user_id] = json.dumps(user_data)  # Save changes
@@ -89,6 +89,10 @@ class UserDB:
 
     def list_all_users(self) -> List[str]:
         return list(self.db.keys())
+
+    def set_target_price(self, user_id, game_id, target_price):
+        self.remove_game_from_user(user_id,game_id)
+        self.add_game_to_user(user_id,game_id,target_price)
 
     def close(self):
         self.db.close()
