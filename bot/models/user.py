@@ -1,6 +1,6 @@
 import os
 from unqlite import UnQLite
-from bot.utils.constants import USER_DATABASE, REGION
+from bot.utils.constants import TRACKERS, ID, TARGET_PRICE, USER_DATABASE, REGION
 from typing import List, Dict, Optional
 from bot.utils.logger import get_logger
 import json
@@ -9,10 +9,9 @@ class UserDB:
     """
         User_ID:
             - region
-            - List[ Game_Tracker ]
+            - List[ Tracker ]
 
-        Game_Tracker:
-            - url
+        Tracker:
             - id
             - min_price
     """
@@ -48,33 +47,41 @@ class UserDB:
     def get_user(self, user_id: int) -> Optional[Dict]:
         return self._get_user_data(user_id)
 
+    def get_games(self, user_id: int) -> List[Dict]:
+        """Get the list of games tracked by a user."""
+        user_data = self._get_user_data(user_id)
+        return user_data.get(TRACKERS, [])
+
     def delete_user(self, user_id: str):
         """Remove a user and their game trackers."""
         if user_id in self.db:
             del self.db[user_id]
 
-    def add_game_to_user(self, user_id: int, url: str, game_id: str, min_price: float = 1e9):
+    def add_game_to_user(self, user_id: int, game_id: str, target_price: float = 1e9):
         """Add a game to a user's game tracker list."""
         user_data = self._get_user_data(user_id)
 
         # Prevent duplicate game ID
-        if any(g["id"] == game_id for g in user_data["games"]):
-            self.logger.info(f"Game {game_id} already tracked by user {user_id}.")
-            return
+        if user_data.get(TRACKERS):
+            if any(g[ID] == game_id for g in user_data[TRACKERS]):
+                self.logger.info(f"Game {game_id} already tracked by user {user_id}.")
+                return
+        else:
+            user_data[TRACKERS] = []
 
-        user_data["games"].append({
-            "url": url,
-            "id": game_id,
-            "min_price": min_price
+        user_data[TRACKERS].append({
+            ID: game_id,
+            TARGET_PRICE: target_price
         })
-        self.db[user_id] = user_data  # Save changes
+
+        self.db[user_id] = json.dumps(user_data)  # Save changes
 
     def remove_game_from_user(self, user_id: int, game_id: str):
         """Remove a tracked game from a user."""
         user_data = self._get_user_data(user_id)
 
-        user_data["games"] = [g for g in user_data["games"] if g["id"] != game_id]
-        self.db[user_id] = user_data
+        user_data[TRACKERS] = list(filter(lambda g: g[ID] != game_id, user_data[TRACKERS]))
+        self.db[user_id] = json.dumps(user_data)
 
     def list_users_by_region(self, region: str) -> List[str]:
         """Get all user IDs in a specific region."""
@@ -85,3 +92,9 @@ class UserDB:
 
     def close(self):
         self.db.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        self.close()

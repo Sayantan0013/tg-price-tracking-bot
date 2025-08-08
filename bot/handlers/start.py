@@ -7,9 +7,8 @@ from bot.models.user import UserDB
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Sends a message with a button when the command /start or /help is issued."""
     user = update.effective_user
-    user_db = UserDB()
-    user_db.add_user(user.id)
-    user_db.close()
+    with UserDB() as user_db:
+        user_db.add_user(user.id)
 
     if update.message and user:
         # await user.set_menu_button(MenuButton())

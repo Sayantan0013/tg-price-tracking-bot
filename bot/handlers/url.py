@@ -1,23 +1,10 @@
 from telegram import Update, MessageEntity
 from telegram.ext import ContextTypes, MessageHandler, filters
 
-from bot.utils.constants import CC, CURRENCY
-from bot.utils.scrapper import get_steam_game_info
+from bot.utils.constants import CC, CURRENCY, GOG_DEFAULT_REGION, STEAM_DEFAULT_REGION
+from bot.utils.misc import url_switch
 from bot.models.user import UserDB
-from urllib.parse import urlencode
-
-def url_switch(url,region=None):
-    if "https://store.steampowered.com/" in url:
-        params = {}
-        if region:
-            params[CC] = region
-        query_string = urlencode(params)
-        return get_steam_game_info(f"{url}?{query_string}")
-    else:
-        return "bad"
-
-def get_currency(region=None):
-    return "₹" if region == None or region not in CURRENCY.keys() else CURRENCY[region]
+from bot.models.game import GameDB
 
 async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """
@@ -26,8 +13,8 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
     """
     message = update.message
     user_id = update.effective_user.id
-    user_db = UserDB()
-    user_region = user_db.get_region(user_id)
+    with UserDB() as user_db:
+        user_region = user_db.get_region(user_id)
 
     if not message:
         return None
@@ -44,14 +31,16 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None
             url = message.text[entity.offset : entity.offset + entity.length]
             urls_found.append(url)
 
-    if urls_found:
-        for url in urls_found:
-            game_id, price = url_switch(url,user_region)
-            await message.reply_text(f"The price of the game {game_id}: {get_currency(user_region)}{price}")
-            # user_db.add_game_to_user()
+    with UserDB() as user_db, GameDB() as game_db:
+        if urls_found:
+            for url in urls_found:
+                game_id, name, price, final_url, region = url_switch(url,user_region)
+                await message.reply_text(f"The price of the game: {CURRENCY[region]}{price}")
+
+                user_db.add_game_to_user(user_id, game_id)
+                game_db.add_game(game_id, final_url, name, price)
 
     # If no URLs were extracted (which shouldn't happen if the filter is working), do nothing.
-    user_db.close()
 
 # Create the handler that filters for messages containing URL entities
 url_handler = MessageHandler(filters.Entity(MessageEntity.URL), handle_url)

@@ -8,7 +8,7 @@ def get_logger(name: str = "Tg Logger") -> logging.Logger:
     logger.setLevel(logging.DEBUG)
 
     # Console handler
-    ch = logging.StreamHandler()
+    ch = logging.FileHandler('logs/debug.log')
     ch.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter(

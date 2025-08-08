@@ -1,4 +1,7 @@
-tinydb
+babel
+cython
+unqlite
 pycountry
 python-telegram-bot
 beautifulsoup4
+APScheduler
