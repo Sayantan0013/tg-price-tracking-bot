@@ -1,4 +1,6 @@
+from bot.utils.constants import LOG_FILE
 import logging
+import os
 
 def get_logger(name: str = "Tg Logger") -> logging.Logger:
     logger = logging.getLogger(name)
@@ -7,8 +9,12 @@ def get_logger(name: str = "Tg Logger") -> logging.Logger:
 
     logger.setLevel(logging.DEBUG)
 
-    # Console handler
-    ch = logging.FileHandler('logs/debug.log')
+    log_dir = os.path.dirname(LOG_FILE)
+    if log_dir:
+        os.makedirs(log_dir, exist_ok=True)
+
+    # file handler
+    ch = logging.FileHandler(LOG_FILE)
     ch.setLevel(logging.DEBUG)
 
     formatter = logging.Formatter(

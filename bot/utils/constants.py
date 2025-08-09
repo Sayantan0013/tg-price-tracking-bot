@@ -2,8 +2,9 @@ from babel.numbers import get_currency_symbol
 from pycountry import currencies, countries
 
 
-USER_DATABASE= "data/user.unqlite"
-GAME_DATABASE= "data/games.unqlite"
+USER_DATABASE="data/user.unqlite"
+GAME_DATABASE="data/games.unqlite"
+LOG_FILE="logs/debug.log"
 
 STORE="store"
 URL="url"

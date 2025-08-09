@@ -2,6 +2,7 @@ import requests
 from bs4 import BeautifulSoup
 from urllib.parse import urlparse, parse_qs
 import json
+import gc
 
 from bot.utils.constants import APP, GOG, GOG_DEFAULT_REGION, STEAM, CC
 from bot.utils.logger import get_logger
@@ -37,27 +38,31 @@ def get_steam_game_info(url):
 
     try:
         response = requests.get(url)
-        response.raise_for_status()  # Raise an exception for bad status codes
+        response.raise_for_status()
     except requests.exceptions.RequestException as e:
         return f"Error fetching URL: {e}"
 
-    soup = BeautifulSoup(response.text, 'html.parser')
+    try:
+        # Parse directly from bytes to avoid creating a big Unicode string
+        soup = BeautifulSoup(response.content, 'html.parser')
 
-    # Relying on the fact that the first price shown by the site is the original game price
-    price_div = soup.find(lambda tag: tag.has_attr("data-price-final"))
-    name_div = soup.find('div',class_='apphub_AppName')
+        price_div = soup.find(lambda tag: tag.has_attr("data-price-final"))
+        name_div = soup.find('div', class_='apphub_AppName')
 
-    if price_div and name_div:
-        try:
-            name = name_div.text
-            price_final = price_div.get("data-price-final")
-            price = int(price_final) / 100
-
-            return name, price
-        except:
-            raise ValueError("Unable to find game name or price")
-    else:
-        logger.info(f"Unable to fetch information from: {url}")
+        if price_div and name_div:
+            try:
+                name = name_div.text.strip()
+                price_final = price_div.get("data-price-final")
+                price = int(price_final) / 100
+                return name, price
+            except Exception:
+                raise ValueError("Unable to find game name or price")
+        else:
+            logger.info(f"Unable to fetch information from: {url}")
+    finally:
+        # Free memory explicitly
+        del soup, price_div, name_div, response
+        gc.collect()
 
 def get_epic_game_info(url):
     headers = {
@@ -102,15 +107,20 @@ def get_gog_game_price(url):
         response.raise_for_status()  # Raise an exception for bad status codes
     except requests.exceptions.RequestException as e:
         return f"Error fetching URL: {e}"
-    
-    soup = BeautifulSoup(response.text, 'html.parser')
-    # Find the span by id
+
     try:
+        soup = BeautifulSoup(response.text, 'html.parser')
+    # Find the span by id
         price = soup.find('span', attrs={"selenium-id": "ProductFinalPrice"}).text.strip('\n')
         name = soup.find('h1', attrs={"selenium-id": "ProductTitle"}).text.strip('\n')
         return name, float(price)
     except Exception as e:
          raise ValueError("Unable to find game name or price")
+    finally:
+        del soup, price, name, response
+        gc.collect()
+
+
 
 
 if __name__ == "__main__":
