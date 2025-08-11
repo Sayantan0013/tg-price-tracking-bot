@@ -46,8 +46,22 @@ def main() -> None:
 
 if __name__ == "__main__":
     scheduler = BackgroundScheduler()
-    scheduler.add_job(track, 'cron', args=(GAME_DATABASE,), hour=12)
-    scheduler.add_job(lambda: asyncio.run(alert(GAME_DATABASE)), 'cron', hour=13)
+    scheduler.add_job(
+        track,
+        'cron',
+        args=(GAME_DATABASE,),
+        hour=12,
+        coalesce=True,
+        misfire_grace_time=None
+    )
+
+    scheduler.add_job(
+        lambda: asyncio.run(alert(GAME_DATABASE)),
+        'cron',
+        hour=13,
+        coalesce=True,
+        misfire_grace_time=None
+    )
 
     scheduler.start()
 

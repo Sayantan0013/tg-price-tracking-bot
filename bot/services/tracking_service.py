@@ -11,7 +11,7 @@ def track(DB_PATH: str):
     with UnQLite(DB_PATH) as db:
         for key, value in db:
             value = json.loads(value.decode("utf-8"))
-            id, price, url, region = url_switch(value[URL], get_region_from_id(key))
+            id, name, price, url, region = url_switch(value[URL], get_region_from_id(key))
             latest_price = value[TRACKING_HISTORY][-1][PRICE]
             if latest_price != price:
                 value[TRACKING_HISTORY].append({
