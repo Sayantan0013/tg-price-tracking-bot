@@ -1,6 +1,6 @@
 
 from bot.utils.scrapper import get_gog_game_price, get_steam_game_info, parse_steam_url, parse_gog_url
-from bot.utils.constants import  CC, CURRENCY, DATE, DATE_FORMAT, GOG_DEFAULT_REGION, PRICE, STEAM_DEFAULT_REGION
+from bot.utils.constants import  CC, CURRENCY, DATE, DATE_FORMAT, GOG_DEFAULT_REGION, ID, PRICE, REGION, STEAM_DEFAULT_REGION, URL
 
 from urllib.parse import urlencode, urlparse, urlunparse, parse_qs
 from telegram import BotCommand, MenuButtonCommands
@@ -87,11 +87,21 @@ def url_switch(url,region=None):
 
         final_url = urlunparse(parsed._replace(query=updated_query))
         game_id = parse_steam_url(final_url)
-        name, price = get_steam_game_info(final_url)
-        return game_id, name, price, final_url, region
+        data = get_steam_game_info(final_url)
+        return {
+            **data,
+            ID: game_id, 
+            URL: final_url, 
+            REGION: region
+        }
     elif "https://www.gog.com/en/game/" in url:
         game_id = parse_gog_url(url)
-        name, price = get_gog_game_price(url)
-        return game_id, name, price, url, region if region else GOG_DEFAULT_REGION
+        data = get_gog_game_price(url)
+        return {            
+            **data,
+            ID: game_id, 
+            URL: url, 
+            REGION: region if region else GOG_DEFAULT_REGION
+        }
     else:
         raise ValueError("Unsupported URL format. Only Steam and GOG URLs are supported.")

@@ -4,7 +4,7 @@ from urllib.parse import urlparse, parse_qs
 import json
 import gc
 
-from bot.utils.constants import APP, GOG, GOG_DEFAULT_REGION, STEAM, CC
+from bot.utils.constants import APP, DISCOUNT, GOG, GOG_DEFAULT_REGION, NAME, PRICE, STEAM, CC
 from bot.utils.logger import get_logger
 
 
@@ -33,7 +33,7 @@ def parse_gog_url(url: str) -> str:
     return "@@".join([GOG, GOG_DEFAULT_REGION, game_id])
 
 
-def get_steam_game_info(url):
+def get_steam_game_info(url) -> dict | None:
     logger = get_logger()
 
     try:
@@ -53,8 +53,14 @@ def get_steam_game_info(url):
             try:
                 name = name_div.text.strip()
                 price_final = price_div.get("data-price-final")
+                discount = price_div.get("data-discount")
                 price = int(price_final) / 100
-                return name, price
+
+                return {
+                    NAME: name,
+                    PRICE: price,
+                    DISCOUNT: discount
+                }
             except Exception:
                 raise ValueError("Unable to find game name or price")
         else:
@@ -101,7 +107,7 @@ def get_epic_game_info(url):
         except Exception as e:
             continue  # silently ignore invalid JSON blocks
 
-def get_gog_game_price(url):
+def get_gog_game_price(url: str) -> dict | None:
     try:
         response = requests.get(url)
         response.raise_for_status()  # Raise an exception for bad status codes
@@ -113,7 +119,10 @@ def get_gog_game_price(url):
     # Find the span by id
         price = soup.find('span', attrs={"selenium-id": "ProductFinalPrice"}).text.strip('\n')
         name = soup.find('h1', attrs={"selenium-id": "ProductTitle"}).text.strip('\n')
-        return name, float(price)
+        return {
+            NAME: name, 
+            PRICE: float(price)
+        }
     except Exception as e:
          raise ValueError("Unable to find game name or price")
     finally:

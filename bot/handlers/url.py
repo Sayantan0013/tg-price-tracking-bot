@@ -2,7 +2,7 @@ from telegram import Update, MessageEntity
 from telegram.ext import ContextTypes, MessageHandler, filters, ConversationHandler, CommandHandler
 from telegram.helpers import escape_markdown
 
-from bot.utils.constants import CURRENCY, ID, NAME, REGION, URL
+from bot.utils.constants import CURRENCY, ID, NAME, PRICE, REGION, URL
 from bot.utils.misc import url_switch
 from bot.models.user import UserDB
 from bot.models.game import GameDB
@@ -33,24 +33,19 @@ async def handle_url(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
         with UserDB() as user_db, GameDB() as game_db:
             # For simplicity, handle only the first URL
             url = urls_found[0]
-            game_id, name, price, final_url, region = url_switch(url, user_region)
+            data = url_switch(url, user_region)
 
             await message.reply_text(
-                f"Current price of <b>{name}</b>: {CURRENCY[region]}{price}\n"
+                f"Current price of <b>{data[NAME]}</b>: {CURRENCY[data[REGION]]}{data[PRICE]}\n"
                 "What target price do you want to set?",
                 parse_mode="HTML"
             )
 
             # Save game info in context to use later
-            context.user_data["pending_game"] = {
-                ID: game_id,
-                NAME: name,
-                URL: final_url,
-                REGION: region
-            }
+            context.user_data["pending_game"] = data.copy()
 
-            user_db.add_game_to_user(user_id, game_id, price)
-            game_db.add_game(game_id, final_url, name, price)
+            user_db.add_game_to_user(user_id, data)
+            game_db.add_game(data)
 
         return WAITING_FOR_PRICE
 
